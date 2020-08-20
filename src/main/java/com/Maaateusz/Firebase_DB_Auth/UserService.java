@@ -20,13 +20,13 @@ public class UserService {
     public String saveUser(User user) throws InterruptedException, ExecutionException {
         Firestore db = FirestoreClient.getFirestore();
         // Add document data  with id "custom_id" using a hashmap
-        Map<String, Object> data = new HashMap<>();
-        data.put("name", user.getName());
-        data.put("city", user.getCity());
-        data.put("age", user.getAge());
-        data.put("regions", Arrays.asList("west_coast", "socal"));
+//        Map<String, Object> data = new HashMap<>();
+//        data.put("name", user.getName());
+//        data.put("city", user.getCity());
+//        data.put("age", user.getAge());
+//        data.put("regions", Arrays.asList("west_coast", "socal"));
         //DocumentReference docRef = db.collection("users").add(data);
-        ApiFuture<DocumentReference> result = db.collection("users").add(data);
+        ApiFuture<DocumentReference> result = db.collection(COLLECTION_NAME).add(user);
         //asynchronously write data
         //ApiFuture<WriteResult> result = docRef.set(data);
         // ...
@@ -38,9 +38,9 @@ public class UserService {
         return result.get().getId();
     }
 
-    public User getUser(String name) throws InterruptedException, ExecutionException {
+    public User getUser(String id) throws InterruptedException, ExecutionException {
         Firestore db = FirestoreClient.getFirestore();
-        DocumentReference documentReference = db.collection(COLLECTION_NAME).document(name);
+        DocumentReference documentReference = db.collection(COLLECTION_NAME).document(id);
         ApiFuture<DocumentSnapshot> future = documentReference.get();
         DocumentSnapshot document0 = future.get();
         User user = null;
@@ -57,33 +57,32 @@ public class UserService {
         Firestore db = FirestoreClient.getFirestore();
         // asynchronously retrieve all users
         ApiFuture<QuerySnapshot> query = db.collection("users").get();
-        // ...
-        // query.get() blocks on response
         QuerySnapshot querySnapshot = query.get();
         List<QueryDocumentSnapshot> documents = querySnapshot.getDocuments();
         String users = new String();
         for (QueryDocumentSnapshot document : documents) {
-            users += "Id: "+document.getId()+", Name: " +document.getString("name") +"\n";
-            System.out.println("User: " + document.getId());
-            System.out.println("Name: " + document.getString("name"));
-            if (document.contains("age")) {
-                System.out.println("age: " + document.getLong("age"));
+            users += "Id: "+document.getId() +"\n";
+            for(Object asd: document.getData().keySet()){
+                System.out.println(asd.toString());
+                users += asd.toString() +": "+ document.get(asd.toString()).toString() +'\n';
             }
-            System.out.println("City: " + document.getString("city"));
         }
         return users;
     }
 
-    public String updateUser(User person) throws InterruptedException, ExecutionException {
+    public String updateUser(User user) throws InterruptedException, ExecutionException {
         Firestore dbFirestore = FirestoreClient.getFirestore();
-        ApiFuture<WriteResult> collectionsApiFuture = dbFirestore.collection(COLLECTION_NAME).document(person.getName()).set(person);
+        ApiFuture<WriteResult> collectionsApiFuture = dbFirestore.collection(COLLECTION_NAME).document(user.getName()).update(null);
+        //https://firebase.google.com/docs/firestore/manage-data/add-data?authuser=1#java_21
+        //ApiFuture<DocumentReference> result = dbFirestore.collection(COLLECTION_NAME).document();
+        //ApiFuture<WriteResult> collectionsApiFuture = dbFirestore.collection(COLLECTION_NAME).document(USER_ID).set(user);
         return collectionsApiFuture.get().getUpdateTime().toString();
     }
 
-    public String deleteUser(String name) {
+    public String deleteUser(String user_id) throws ExecutionException, InterruptedException {
         Firestore dbFirestore = FirestoreClient.getFirestore();
-        ApiFuture<WriteResult> writeResult = dbFirestore.collection(COLLECTION_NAME).document(name).delete();
-        return "Document with User ID "+name+" has been deleted";
+        ApiFuture<WriteResult> writeResult = dbFirestore.collection(COLLECTION_NAME).document(user_id).delete();
+        return "Document with User ID "+ user_id +" has been deleted\n" + writeResult.get().getUpdateTime();
     }
 
 }
